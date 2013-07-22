@@ -8,7 +8,7 @@ import (
 func main() {
     fmt.Printf("Udis Test\n----------\n")
 
-    u := udis.NewUdis()
+    u := udis.New()
     u.SetMode(32)
     u.SetSyntax(udis.UD_SYN_INTEL)
     u.SetReadFromStdin()

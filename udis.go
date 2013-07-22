@@ -38,7 +38,7 @@ const (
     UD_OP_MEM           = (uint)(C.UD_OP_MEM)
 )
 
-func NewUdis() *Udis {
+func New() *Udis {
     s := &C.struct_ud{}
     C.ud_init(s)
     return &Udis{s}
