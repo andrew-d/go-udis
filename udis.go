@@ -1,4 +1,4 @@
-package main
+package udis
 
 /*
 #include <stdlib.h>
@@ -20,7 +20,6 @@ void* c_ud_translate_att() {
 import "C"
 
 import (
-    "fmt"
     "unsafe"
 )
 
@@ -80,6 +79,10 @@ func (u *Udis) SetInputBuffer(buff []byte) {
     C.ud_set_input_buffer(u.udis, ptr, size)
 }
 
+func (u *Udis) SetReadFromStdin() {
+    C.ud_set_input_file(u.udis, C.stdin)
+}
+
 func (u *Udis) Disassemble() bool {
     ret := C.ud_disassemble(u.udis)
     return (uint)(ret) != 0
@@ -126,18 +129,4 @@ func (u *Udis) InstructionMnemonicString() string {
     mn := u.InstructionMnemonic()
     s := C.ud_lookup_mnemonic((uint16)(mn))
     return C.GoString(s)
-}
-
-func main() {
-    fmt.Printf("Udis Test\n\n")
-
-    u := NewUdis()
-    u.SetMode(32)
-    u.SetSyntax(UD_SYN_INTEL)
-
-    C.ud_set_input_file(u.udis, C.stdin)
-
-    for u.Disassemble() {
-        fmt.Println(u.InstructionAsm())
-    }
 }
