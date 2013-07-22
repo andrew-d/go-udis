@@ -24,7 +24,13 @@ import (
 )
 
 type Udis struct {
-    udis    *C.struct_ud
+    udis            *C.struct_ud
+
+
+    // Used to store the last symbol string that was converted.  Since we
+    // replace this each time, we store the last value here and free it before
+    // adding a new one.
+    last_symbol     *C.char
 }
 
 const (
@@ -41,7 +47,12 @@ const (
 func New() *Udis {
     s := &C.struct_ud{}
     C.ud_init(s)
-    return &Udis{s}
+    return &Udis{s, nil}
+}
+
+func (u *Udis) Close() {
+    // Cleanup any use of input hooks.
+    u.cleanupCallbacks()
 }
 
 func (u *Udis) SetMode(mode int) {
@@ -68,11 +79,6 @@ func (u *Udis) SetSyntax(syntax int) {
     C.c_ud_set_syntax(u.udis, syn)
 }
 
-func (u *Udis) SetInputHook(hook func() int) {
-    // This doesn't work.
-    //C.ud_set_input_hook(u.udis, hook)
-}
-
 func (u *Udis) SetInputBuffer(buff []byte) {
     size := (C.size_t)(len(buff))
     ptr := (*C.uint8_t)(unsafe.Pointer(&buff[0]))
@@ -81,6 +87,10 @@ func (u *Udis) SetInputBuffer(buff []byte) {
 
 func (u *Udis) SetReadFromStdin() {
     C.ud_set_input_file(u.udis, C.stdin)
+}
+
+func (u *Udis) Skip(num uint) {
+    C.ud_input_skip(u.udis, (C.size_t)(num))
 }
 
 func (u *Udis) Disassemble() bool {

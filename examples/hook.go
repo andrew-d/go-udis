@@ -6,13 +6,20 @@ import (
 )
 
 func main() {
-    fmt.Printf("Udis Test\n----------\n")
-
     u := udis.New()
     defer u.Close()
+
     u.SetMode(32)
     u.SetSyntax(udis.UD_SYN_INTEL)
-    u.SetReadFromStdin()
+
+    var i int = 0
+    u.SetInputHook(func(ud *udis.Udis) int {
+        i += 1
+        if i <= 5 {
+            return 0x90
+        }
+        return -1
+    })
 
     for u.Disassemble() {
         fmt.Println(u.InstructionAsm())
