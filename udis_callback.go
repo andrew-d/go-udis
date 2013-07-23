@@ -11,7 +11,10 @@ extern void free_opaque_data(struct ud*);
 */
 import "C"
 
-import "unsafe"
+import (
+    "sync"
+    "unsafe"
+)
 
 // We want to be able to set various callbacks.  For this to work, we need to
 // pass a callback function to udis86, which it will then call to perform work
@@ -43,6 +46,7 @@ import "unsafe"
 // callback function, rather than just a udis86 structure from C.
 
 var udMap = make(map[unsafe.Pointer]*Udis)
+var rw sync.RWMutex
 
 //export goInputHookCallback
 func goInputHookCallback(ud, ptr unsafe.Pointer) int {
@@ -52,7 +56,10 @@ func goInputHookCallback(ud, ptr unsafe.Pointer) int {
     }
 
     // Obtain the Udis struct.
+    rw.RLock()
     udObj, ok := udMap[ud]
+    rw.RUnlock()
+
     if !ok {
         // TODO: throw error?
         return -1
@@ -66,14 +73,17 @@ func goInputHookCallback(ud, ptr unsafe.Pointer) int {
 
 //export goSymResolverCallback
 func goSymResolverCallback(ud unsafe.Pointer, addr C.uint64_t,
-                           offset *C.int64_t, ptr unsafe.Pointer) *C.char {
+    offset *C.int64_t, ptr unsafe.Pointer) *C.char {
     // Immediately return nil if there's no callback - this does nothing, then.
     if ptr == nil {
         return nil
     }
 
     // Obtain the Udis struct.
+    rw.RLock()
     udObj, ok := udMap[ud]
+    rw.RUnlock()
+
     if !ok {
         // TODO: throw error?
         return nil
@@ -100,7 +110,9 @@ func goSymResolverCallback(ud unsafe.Pointer, addr C.uint64_t,
 // Set up the input hook.
 func (u *Udis) SetInputHook(hook func(*Udis) int) {
     // Firstly, add to the map.
+    rw.Lock()
     udMap[unsafe.Pointer(u.udis)] = u
+    rw.Unlock()
 
     // And then set the hook.
     C.setup_input_hook(u.udis, unsafe.Pointer(&hook))
@@ -109,7 +121,9 @@ func (u *Udis) SetInputHook(hook func(*Udis) int) {
 // Set up the symbol resolver.
 func (u *Udis) SetSymResolver(fn func(*Udis, uint64, *int64) string) {
     // Firstly, add to the map.
+    rw.Lock()
     udMap[unsafe.Pointer(u.udis)] = u
+    rw.Unlock()
 
     // And then set the sym resolver function.
     C.setup_sym_resolver(u.udis, unsafe.Pointer(&fn))
@@ -118,7 +132,9 @@ func (u *Udis) SetSymResolver(fn func(*Udis, uint64, *int64) string) {
 // Cleans up after ourselves.
 func (u *Udis) cleanupCallbacks() {
     // Remove our pointer from the map.
+    rw.Lock()
     delete(udMap, unsafe.Pointer(u.udis))
+    rw.Unlock()
 
     // Cleanup the udis86 structure too.
     C.free_opaque_data(u.udis)
