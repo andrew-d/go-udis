@@ -18,11 +18,11 @@ func setupDisasm(code []byte, mode, syntax int) *Udis {
 func TestSimpleDisasm(t *testing.T) {
     code := []byte{
         0x65, 0x67, 0x89, 0x87, 0x76, 0x65, // mov [gs:bx+0x6576], eax
-        0x54,                               // push esp
-        0x56,                               // push esi
-        0x78, 0x89,                         // js 0x93
-        0x09, 0x00,                         // or [eax], eax
-        0x87,                               // fragment
+        0x54,       // push esp
+        0x56,       // push esi
+        0x78, 0x89, // js 0x93
+        0x09, 0x00, // or [eax], eax
+        0x87, // fragment
     }
     expected := []string{
         "mov [gs:bx+0x6576], eax",
@@ -51,9 +51,9 @@ func TestSimpleDisasm(t *testing.T) {
 func TestInstructionHex(t *testing.T) {
     code := []byte{
         0x65, 0x67, 0x89, 0x87, 0x76, 0x65, // mov [gs:bx+0x6576], eax
-        0x54,                               // push esp
+        0x54, // push esp
     }
-    hex := []string {
+    hex := []string{
         "656789877665",
         "54",
     }
@@ -76,11 +76,11 @@ func TestInstructionHex(t *testing.T) {
 func TestInstructionBytes(t *testing.T) {
     code := []byte{
         0x65, 0x67, 0x89, 0x87, 0x76, 0x65, // mov [gs:bx+0x6576], eax
-        0x54,                               // push esp
+        0x54, // push esp
     }
-    ins := [][]byte {
+    ins := [][]byte{
         {0x65, 0x67, 0x89, 0x87, 0x76, 0x65}, // mov [gs:bx+0x6576], eax
-        {0x54},                               // push esp
+        {0x54}, // push esp
     }
 
     u := setupDisasm(code, 32, UD_SYN_INTEL)

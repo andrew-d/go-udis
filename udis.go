@@ -24,24 +24,23 @@ import (
 )
 
 type Udis struct {
-    udis            *C.struct_ud
-
+    udis *C.struct_ud
 
     // Used to store the last symbol string that was converted.  Since we
     // replace this each time, we store the last value here and free it before
     // adding a new one.
-    last_symbol     *C.char
+    last_symbol *C.char
 }
 
 const (
-    UD_SYN_INTEL        = 1
-    UD_SYN_ATT          = 2
+    UD_SYN_INTEL = 1
+    UD_SYN_ATT   = 2
 
-    UD_VENDOR_ANY       = (uint)(C.UD_VENDOR_ANY)
-    UD_VENDOR_INTEL     = (uint)(C.UD_VENDOR_INTEL)
-    UD_VENDOR_AMD       = (uint)(C.UD_VENDOR_AMD)
+    UD_VENDOR_ANY   = (uint)(C.UD_VENDOR_ANY)
+    UD_VENDOR_INTEL = (uint)(C.UD_VENDOR_INTEL)
+    UD_VENDOR_AMD   = (uint)(C.UD_VENDOR_AMD)
 
-    UD_OP_MEM           = (uint)(C.UD_OP_MEM)
+    UD_OP_MEM = (uint)(C.UD_OP_MEM)
 )
 
 func New() *Udis {
@@ -71,9 +70,12 @@ func (u *Udis) SetSyntax(syntax int) {
     var syn unsafe.Pointer
 
     switch syntax {
-    case UD_SYN_INTEL:  syn = C.c_ud_translate_intel()
-    case UD_SYN_ATT:    syn = C.c_ud_translate_att()
-    default:            panic("bad syntax")
+    case UD_SYN_INTEL:
+        syn = C.c_ud_translate_intel()
+    case UD_SYN_ATT:
+        syn = C.c_ud_translate_att()
+    default:
+        panic("bad syntax")
     }
 
     C.c_ud_set_syntax(u.udis, syn)
@@ -124,7 +126,6 @@ func (u *Udis) InstructionBytes() []byte {
 
 // TODO: fill this out
 type UdisOperand struct {
-
 }
 
 func (u *Udis) InstructionOperand(index int) (*UdisOperand, error) {
