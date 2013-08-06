@@ -1,3 +1,10 @@
+// This package is a wrapper around the Udis86 disassembly library, which can
+// be found at:
+//      https://github.com/vmt/udis86/
+// It attempts to provide a comprehensive and yet higher-level interface to all
+// of Udis86's functionality.  For examples, please see the examples/ directory,
+// and for documentation on Udis86, please see:
+//      http://udis86.sourceforge.net/
 package udis
 
 /*
@@ -25,6 +32,7 @@ import (
     "unsafe"
 )
 
+// Udis represents an instance of the underlying Udis86 state.
 type Udis struct {
     udis *C.struct_ud
 
@@ -218,29 +226,42 @@ const (
     UD_OP_CONST = (uint32)(C.UD_OP_CONST)
 )
 
+// Create a new Udis86 structure, and return it.  Note that you must clean up
+// by calling Close(), or you will leak memory.
 func New() *Udis {
     s := &C.struct_ud{}
     C.ud_init(s)
     return &Udis{s, nil}
 }
 
+// Close will clean up any memory allocated for the Udis86 state.
 func (u *Udis) Close() {
     // Cleanup any use of input hooks.
     u.cleanupCallbacks()
 }
 
+// Set the mode of disassembly.  The 'mode' parameter specifies the bit mode
+// to work in.  Valid inputs are 16, 32, and 64.
 func (u *Udis) SetMode(mode int) {
     C.ud_set_mode(u.udis, (C.uint8_t)(mode))
 }
 
+// SetPC will set the program counter (IP/EIP/RIP), which will change the
+// offset of the generated assembly output.
 func (u *Udis) SetPC(pc uint64) {
     C.ud_set_pc(u.udis, (C.uint64_t)(pc))
 }
 
+// SetVendor selects the vendor to treat disassembly as.  This is really only
+// useful for stuff like VMS or SVM.  Valid inputs are UD_VENDOR_INTEL,
+// UD_VENDOR_AMD, or UD_VENDOR_ANY.
 func (u *Udis) SetVendor(vendor uint) {
     C.ud_set_vendor(u.udis, (C.unsigned)(vendor))
 }
 
+// Set the syntax to output assembly as.  Valid values are UD_SYN_INTEL,
+// UD_SYN_ATT, or UD_SYN_NONE.  If set to UD_SYN_NONE, no assembly output
+// will be generated.  The default is Intel syntax.
 func (u *Udis) SetSyntax(syntax int) {
     var syn unsafe.Pointer
 
@@ -258,54 +279,81 @@ func (u *Udis) SetSyntax(syntax int) {
     C.c_ud_set_syntax(u.udis, syn)
 }
 
+// SetInputBuffer sets the input buffer to read bytes from.
 func (u *Udis) SetInputBuffer(buff []byte) {
     size := (C.size_t)(len(buff))
     ptr := (*C.uint8_t)(unsafe.Pointer(&buff[0]))
+
+    // TODO: will ptr get GC'd?  Look into this.
     C.ud_set_input_buffer(u.udis, ptr, size)
 }
 
+// SetReadFromStdin will tell Udis86 to read bytes from standard input.  Note
+// that this used the underlying C's stdin, and as such might conflict with Go's
+// usage of stdin.  It is not recommended to mix the two.
 func (u *Udis) SetReadFromStdin() {
     C.ud_set_input_file(u.udis, C.stdin)
 }
 
+// Skip will skip the given number of bytes from the input stream, not
+// disassembling them.
 func (u *Udis) Skip(num uint) {
     C.ud_input_skip(u.udis, (C.size_t)(num))
 }
 
+// Disassemble will disassemble a single instruction from the input stream.  It
+// will return whether or not an instruction was successfully disassembled.  This
+// function can be used in a for loop, as follows:
+//      for u.Disassemble() {
+//          // Do something with the current instruction
+//      }
 func (u *Udis) Disassemble() bool {
     ret := C.ud_disassemble(u.udis)
     return (uint)(ret) != 0
 }
 
+// InstructionAsm retrieves the string representation of the currently
+// disassembled instruction.
 func (u *Udis) InstructionAsm() string {
     s := C.ud_insn_asm(u.udis)
     return C.GoString(s)
 }
 
+// InstructionLen returns the number of bytes taken by the current
+// disassembled instruction.
 func (u *Udis) InstructionLen() int {
     return (int)(C.ud_insn_len(u.udis))
 }
 
+// InstructionOffset returns the offset of the current instruction from the
+// initially-specified program counter.
 func (u *Udis) InstructionOffset() uint64 {
     return (uint64)(C.ud_insn_off(u.udis))
 }
 
+// InstructionHex returns a string containing the hexadecimal representation of
+// the bytes making up the current instruction.
 func (u *Udis) InstructionHex() string {
     s := C.ud_insn_hex(u.udis)
     return C.GoString(s)
 }
 
+// InstructionBytes returns a byte slice containing the bytes making up the
+// current instruction.
 func (u *Udis) InstructionBytes() []byte {
     l := u.InstructionLen()
     ptr := unsafe.Pointer(C.ud_insn_ptr(u.udis))
     return C.GoBytes(ptr, (C.int)(l))
 }
 
+// This structure represents a pointer containing both a segment and an offset.
 type PtrVal struct {
     Seg uint16
     Off uint32
 }
 
+// This structure represents information about a given operand of an assembly
+// instruction.
 type UdisOperand struct {
     Type   uint32
     Size   uint8
@@ -315,7 +363,7 @@ type UdisOperand struct {
     Offset uint8
 
     // This value can be one of any sized numeric type (int8, uint8, int16, etc.),
-    // or a PtrVal type (from above).
+    // or a PtrVal instance.
     Lval interface{}
     Disp uint64
 }
@@ -326,6 +374,9 @@ func (o *UdisOperand) ToString() string {
         o.Lval, o.Disp)
 }
 
+// InstructionOperands returns all operands for the current instruction.  If
+// the instruction does not have operands, the returned slice will be of length
+// 0.
 func (u *Udis) InstructionOperands() []UdisOperand {
     var ret []UdisOperand
 
@@ -440,10 +491,15 @@ func (u *Udis) InstructionOperands() []UdisOperand {
     return ret
 }
 
+// InstructionMnemonic returns the (numerical) mnemonic for the current
+// instruction.  The values for this function can be found in the "itab.h"
+// header file of Udis86.
 func (u *Udis) InstructionMnemonic() uint {
     return (uint)(u.udis.mnemonic)
 }
 
+// InstructionMnemonicString will return the string mnemonic for the current
+// instruction.
 func (u *Udis) InstructionMnemonicString() string {
     mn := u.InstructionMnemonic()
     s := C.ud_lookup_mnemonic((uint16)(mn))
