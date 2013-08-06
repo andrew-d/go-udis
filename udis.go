@@ -36,6 +36,7 @@ type Udis struct {
 
 // Constants from #defines and such.
 const (
+    UD_SYN_NONE  = 0
     UD_SYN_INTEL = 1
     UD_SYN_ATT   = 2
 
@@ -244,6 +245,8 @@ func (u *Udis) SetSyntax(syntax int) {
     var syn unsafe.Pointer
 
     switch syntax {
+    case UD_SYN_NONE:
+        syn = unsafe.Pointer(uintptr(0))
     case UD_SYN_INTEL:
         syn = C.c_ud_translate_intel()
     case UD_SYN_ATT:
