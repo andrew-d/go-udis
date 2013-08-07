@@ -40,6 +40,10 @@ type Udis struct {
     // replace this each time, we store the last value here and free it before
     // adding a new one.
     last_symbol *C.char
+
+    // This pointer is used to keep the input buffer (if present) alive, so
+    // it doesn't get GC'd.
+    input_buffer []byte
 }
 
 // Constants from #defines and such.
@@ -281,10 +285,13 @@ func (u *Udis) SetSyntax(syntax int) {
 
 // SetInputBuffer sets the input buffer to read bytes from.
 func (u *Udis) SetInputBuffer(buff []byte) {
+    // Prevent the pointer from getting GC'd.
+    u.input_buffer = buff
+
+    // Convert to a C pointer.
     size := (C.size_t)(len(buff))
     ptr := (*C.uint8_t)(unsafe.Pointer(&buff[0]))
 
-    // TODO: will ptr get GC'd?  Look into this.
     C.ud_set_input_buffer(u.udis, ptr, size)
 }
 
