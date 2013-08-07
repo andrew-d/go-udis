@@ -110,15 +110,6 @@ func goSymResolverCallback(ud unsafe.Pointer, addr C.uint64_t,
 // SetInputHook sets a callback function that is used to retrieve bytes of input
 // for the disassembler.  The callback function should return successive bytes
 // for each call, returning -1 when it reaches the end of the input stream.
-// For example (taken from examples/hook.go):
-//      var i int = 0
-//      u.SetInputHook(func(ud *udis.Udis) int {
-//          i += 1
-//          if i <= 5 {
-//              return 0x90     // nop
-//          }
-//          return -1
-//      })
 func (u *Udis) SetInputHook(hook func(*Udis) int) {
     // Firstly, add to the map.
     rw.Lock()

@@ -235,7 +235,7 @@ const (
 func New() *Udis {
     s := &C.struct_ud{}
     C.ud_init(s)
-    return &Udis{s, nil}
+    return &Udis{s, nil, []byte{}}
 }
 
 // Close will clean up any memory allocated for the Udis86 state.
