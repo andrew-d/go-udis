@@ -2,7 +2,7 @@
 // be found at:
 //      https://github.com/vmt/udis86/
 // It attempts to provide a comprehensive and yet higher-level interface to all
-// of Udis86's functionality.  For examples, please see the examples/ directory,
+// of Udis86's functionality.  For examples, please see  udis_examples_test.go,
 // and for documentation on Udis86, please see:
 //      http://udis86.sourceforge.net/
 package udis
