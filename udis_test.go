@@ -165,3 +165,23 @@ func TestInstructionOperands(t *testing.T) {
         }
     }
 }
+
+func BenchmarkDisassembly(b *testing.B) {
+    buff := bytes.Repeat([]byte{0x90}, 100)
+    u := New()
+    defer u.Close()
+
+    u.SetMode(32)
+    u.SetSyntax(UD_SYN_INTEL)
+
+    b.ResetTimer()
+
+    for i := 0; i < b.N; i++ {
+        u.SetInputBuffer(buff)
+        for u.Disassemble() {
+            if( u.InstructionAsm() != "nop" ) {
+                b.Fatalf("Invalid disassembly: %s\n", u.InstructionAsm())
+            }
+        }
+    }
+}
