@@ -107,7 +107,18 @@ func goSymResolverCallback(ud unsafe.Pointer, addr C.uint64_t,
     return c_ret
 }
 
-// Set up the input hook.
+// SetInputHook sets a callback function that is used to retrieve bytes of input
+// for the disassembler.  The callback function should return successive bytes
+// for each call, returning -1 when it reaches the end of the input stream.
+// For example (taken from examples/hook.go):
+//      var i int = 0
+//      u.SetInputHook(func(ud *udis.Udis) int {
+//          i += 1
+//          if i <= 5 {
+//              return 0x90     // nop
+//          }
+//          return -1
+//      })
 func (u *Udis) SetInputHook(hook func(*Udis) int) {
     // Firstly, add to the map.
     rw.Lock()
@@ -118,7 +129,16 @@ func (u *Udis) SetInputHook(hook func(*Udis) int) {
     C.setup_input_hook(u.udis, unsafe.Pointer(&hook))
 }
 
-// Set up the symbol resolver.
+// SetSymResolver sets the symbol resolver callback.  The callback function will
+// receive a pointer to the Udis structure, the address (determined by the
+// previously-set program counter - see the SetPC function), and an int64
+// offset pointer.  The callback should return a string representing the symbol
+// nearest the disassembly site, and can set the offset pointer to a value
+// representing the offset from the symbol.  For more example, see the tests
+// in Udis86 itself:
+//      https://github.com/vmt/udis86/blob/master/tests/symresolve.c
+// And the corresponding output:
+//      https://github.com/vmt/udis86/blob/master/tests/symresolve.ref
 func (u *Udis) SetSymResolver(fn func(*Udis, uint64, *int64) string) {
     // Firstly, add to the map.
     rw.Lock()

@@ -16,7 +16,7 @@ func main() {
     u.SetInputHook(func(ud *udis.Udis) int {
         i += 1
         if i <= 5 {
-            return 0x90
+            return 0x90     // nop
         }
         return -1
     })
